@@ -1,0 +1,80 @@
+import os
+import streamlit as st
+import pinecone
+from langchain_community.embeddings import CohereEmbeddings
+from langchain_community.vectorstores import Pinecone as LangchainPinecone
+from langchain_community.llms import Cohere
+from sentence_transformers import SentenceTransformer
+import PyPDF2
+
+# Set Pinecone and Cohere API Keys
+PINECONE_API_KEY = "YOUR_VALID_PINECONE_API_KEY"  # Replace with your Pinecone API key
+COHERE_API_KEY = "YOUR_VALID_COHERE_API_KEY"  # Replace with your Cohere API key
+
+# Initialize Pinecone instance
+pc = pinecone.Pinecone(api_key=PINECONE_API_KEY)
+
+# Create or access the Pinecone index
+index_name = 'rag-model-index'
+if index_name not in pc.list_indexes().names():
+    pc.create_index(
+        name=index_name,
+        dimension=768,  # Dimension size for embeddings
+        metric='cosine'  # Metric for similarity search
+    )
+
+# Initialize the index
+index = pc.index(index_name)
+
+# Initialize Sentence-Transformer model for embedding generation
+embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+
+# Initialize Cohere for answer generation
+cohere_client = Cohere(api_key=COHERE_API_KEY)
+
+# Set up LangChain with Pinecone
+embeddings = CohereEmbeddings(cohere_api_key=COHERE_API_KEY)
+vectorstore = LangchainPinecone(index, embeddings)
+
+# Streamlit interface
+st.title("Interactive QA Bot")
+uploaded_file = st.file_uploader("Upload a PDF document", type="pdf")
+
+if uploaded_file:
+    # Extract text from the uploaded PDF
+    with open(uploaded_file, "rb") as f:
+        reader = PyPDF2.PdfReader(f)
+        pdf_text = ""
+        for page in reader.pages:
+            pdf_text += page.extract_text()  # Extract text from each page
+
+    # Generate embeddings for the extracted text
+    pdf_embedding = embedding_model.encode([pdf_text])
+
+    # Upload the document embedding to Pinecone
+    index.upsert([(uploaded_file.name, pdf_embedding[0])])
+    st.success("Document uploaded and indexed!")
+
+    # Ask question
+    question = st.text_input("Ask a question based on the document:")
+    if question:
+        # Retrieve the most relevant document using the query embedding
+        query_embedding = embedding_model.encode([question])
+        result = index.query(queries=query_embedding, top_k=1, include_metadata=True)
+        
+        # Get the relevant document's text
+        if result['matches']:
+            relevant_document_text = pdf_text  # This would be the PDF text or another source based on your logic
+            context = relevant_document_text
+
+            # Generate the answer using Cohere
+            response = cohere_client.generate(
+                model='xlarge',
+                prompt=f"Context: {context}\nQuestion: {question}\nAnswer:",
+                max_tokens=100
+            )
+
+            # Display the generated answer
+            st.write(f"Answer: {response.generations[0].text.strip()}")
+        else:
+            st.write("No relevant documents found.")
