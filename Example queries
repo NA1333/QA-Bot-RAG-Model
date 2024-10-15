@@ -1,1 +1,25 @@
+Example Queries and Outputs
 
+Query: "Where is the capital of India?"
+Expected Output: "The capital of India is New Delhi.
+
+"Query:"What is the Great Wall of China?"
+Expected Output: "The Great Wall of China was built over several dynasties as a defense against invasions."
+
+Query: "What programming language is popular for AI and data science?"
+Expected Output: "Python is a popular programming language for AI and data science due to its simplicity and extensive libraries."
+
+Query: "How does the RAG model work?"
+Expected Output: "The RAG model combines retrieval and generation techniques. It retrieves relevant documents based on a user query and generates answers using a language model."
+
+Query: "What are the benefits of using Pinecone?"
+Expected Output: "Pinecone provides an efficient vector database for storing and querying high-dimensional embeddings, enabling fast similarity searches."
+
+Query: "Can you explain the purpose of the Cohere model?"
+Expected Output: "The Cohere model is a generative language model that creates human-like responses based on provided context, making it suitable for conversational AI applications."
+
+Query: "What is the importance of embeddings in this project?"
+Expected Output: "Embeddings represent the semantic meaning of text in a high-dimensional space, allowing the model to perform efficient similarity searches and improve the accuracy of responses."
+
+Query: "How do I run the Streamlit application?"
+Expected Output: "To run the Streamlit application, use the command streamlit run app.py in your terminal, and open the application in your browser at http://localhost:8501."
