@@ -1,0 +1,76 @@
+import os
+import pinecone
+from sentence_transformers import SentenceTransformer
+import cohere
+
+# Set API Keys
+PINECONE_API_KEY = "YOUR_PINECONE_API_KEY"  # Replace with your Pinecone API key
+COHERE_API_KEY = "YOUR_COHERE_API_KEY"  # Replace with your Cohere API key
+
+# Initialize Pinecone
+pc = pinecone.Pinecone(api_key=PINECONE_API_KEY)
+
+# Create or access the Pinecone index
+index_name = 'rag-model-index'
+if index_name not in pc.list_indexes().names():
+    pc.create_index(
+        name=index_name,
+        dimension=768,  # Dimension size for embeddings
+        metric='cosine'  # Similarity metric
+    )
+
+# Initialize the index
+index = pc.index(index_name)
+
+# Initialize the Sentence-Transformer model
+model = SentenceTransformer('all-MiniLM-L6-v2')
+
+# Example documents for the RAG model
+documents = [
+    "The capital of France is Paris.",
+    "The Great Wall of China was built over several dynasties.",
+    "Python is a popular programming language for AI and data science."
+]
+
+# Generate embeddings for each document
+embeddings = model.encode(documents)
+
+# Upload embeddings to Pinecone
+for i, embedding in enumerate(embeddings):
+    index.upsert([(f"doc-{i}", embedding)])
+
+print(f"{len(documents)} documents uploaded to Pinecone.")
+
+# Initialize Cohere for answer generation
+cohere_client = cohere.Client(COHERE_API_KEY)
+
+def query_qa_bot(question):
+    # Step 1: Embed the query
+    query_embedding = model.encode([question])
+
+    # Step 2: Retrieve relevant documents from Pinecone
+    result = index.query(queries=query_embedding, top_k=2, include_metadata=True)
+
+    # Step 3: Get the most relevant documents
+    retrieved_docs = [match['id'] for match in result['matches']]
+    doc_texts = [documents[int(doc_id.split("-")[1])] for doc_id in retrieved_docs]
+
+    # Step 4: Generate the answer using Cohere
+    context = " ".join(doc_texts)  # Combine the retrieved docs as context for the answer
+    response = cohere_client.generate(
+        model='xlarge',
+        prompt=f"Context: {context}\nQuestion: {question}\nAnswer:",
+        max_tokens=100
+    )
+
+    # Step 5: Return the generated answer
+    return response.generations[0].text.strip()
+
+# Example test queries
+question = "Where is the capital of France?"
+answer = query_qa_bot(question)
+print(f"Q: {question}\nA: {answer}")
+
+question = "What is Python used for?"
+answer = query_qa_bot(question)
+print(f"Q: {question}\nA: {answer}")
