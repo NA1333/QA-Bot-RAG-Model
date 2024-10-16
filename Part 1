@@ -66,11 +66,5 @@ def query_qa_bot(question):
     # Step 5: Return the generated answer
     return response.generations[0].text.strip()
 
-# Example test queries
-question = "Where is the capital of France?"
-answer = query_qa_bot(question)
-print(f"Q: {question}\nA: {answer}")
-
-question = "What is Python used for?"
 answer = query_qa_bot(question)
 print(f"Q: {question}\nA: {answer}")
