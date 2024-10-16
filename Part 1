@@ -25,13 +25,6 @@ index = pc.index(index_name)
 # Initialize the Sentence-Transformer model
 model = SentenceTransformer('all-MiniLM-L6-v2')
 
-# Example documents for the RAG model
-documents = [
-    "The capital of France is Paris.",
-    "The Great Wall of China was built over several dynasties.",
-    "Python is a popular programming language for AI and data science."
-]
-
 # Generate embeddings for each document
 embeddings = model.encode(documents)
 
